@@ -1,2 +1,2 @@
-# UseRoux
-An aesthetic guide to Roux built using Three.js.
+# RouxSolver
+Solves a 3x3 puzzle cube from any state using the Roux method.
