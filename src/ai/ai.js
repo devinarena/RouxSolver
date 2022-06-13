@@ -7,6 +7,8 @@
 
 import { CMLL, CMLL_PIECES, STM, SBM, LSEM } from "./algorithms";
 
+// This is the actual state of the cube. I did not bother with this for the simulator,
+// but the AI practically requires it in order to keep computation time shorter.
 const state = [
   [
     [1, 1, 1],
@@ -45,6 +47,7 @@ const state = [
   ], // bottom 45-53
 ];
 
+// track the initialState (solved state)
 let initialState = JSON.parse(JSON.stringify(state));
 
 const TOP = 0;
@@ -54,23 +57,31 @@ const RIGHT = 3;
 const BACK = 4;
 const BOTTOM = 5;
 
+// Max depth for the pruning table
 const PRUNE_DEPTH = 4;
 
-const scrambleAI = (scramble) => {
-  for (const s of [state, fbMask, sbMask, lseMask]) makeMoves(s, scramble);
-};
-
+/**
+ * Heart of the AI functionality. Generates a solution to the cube and updates
+ * the AI state to reflect this solution.
+ *
+ * @returns {String, String, String, String} the solution to the cube as FB, SB, CMLL, and LSE
+ */
 const startAI = () => {
+  // for metrics
   let start = new Date();
 
+  // track solution strings to return
   let FB = "";
   let SB = "";
   let LSE = "";
 
+  // Generate the solution to FB using the IDDFS
   for (let i = 1; i <= 10; i++) {
     const sol = generateSolution(fbMask, STM, [], i, fbPieces, fbPruningTable);
+    // if we find a solution save it
     if (sol && sol.length > 0) {
       console.log(i + " moves: " + sol);
+      // update ALL necessary states (things we have not yet solved)
       makeMoves(state, sol);
       makeMoves(sbMask, sol);
       makeMoves(lseMask, sol);
@@ -79,10 +90,13 @@ const startAI = () => {
     }
   }
 
+  // Generate the solution to FB using the IDDFS
   for (let i = 1; i <= 15; i++) {
     const sol = generateSolution(sbMask, SBM, [], i, sbPieces, sbPruningTable);
+    // if we find a solution save it
     if (sol && sol.length > 0) {
       console.log(i + " moves: " + sol);
+      // update ALL necessary states (things we have not yet solved)
       makeMoves(state, sol);
       makeMoves(lseMask, sol);
       SB = sol;
@@ -90,21 +104,23 @@ const startAI = () => {
     }
   }
 
+  // CMLL is much easier to solve, so we can just use the correct algorithm
   const { CMLL, U } = getCMLL(state);
   console.log("CMLL: " + CMLL);
+  // still haven't solved LSE
   makeMoves(state, CMLL);
   makeMoves(lseMask, U + CMLL);
 
+  // Temporary check for CMLL cases to make sure they work
   for (const req of [0, 2, 6, 8]) {
-    const face = Math.floor(req / 9);
-    const row = Math.floor((req % 9) / 3);
-    const col = req % 3;
+    const { face, row, col } = toStatePosition(req);
     if (state[face][row][col] !== initialState[face][row][col]) {
       console.log("CMLL: " + CMLL + " FAILED");
       return;
     }
   }
 
+  // Generate the solution to LSE using the IDDFS
   for (let i = 1; i <= 18; i++) {
     const sol = generateSolution(
       lseMask,
@@ -114,8 +130,10 @@ const startAI = () => {
       lsePieces,
       lsePruningTable
     );
+    // if we find a solution save it
     if (sol && sol.length > 0) {
       console.log(i + " moves: " + sol);
+      // only need to update state, after this the cube should be solved
       makeMoves(state, sol);
       LSE = sol;
       break;
@@ -127,6 +145,12 @@ const startAI = () => {
   return { FB, SB, CMLL: U + CMLL, LSE };
 };
 
+/**
+ * Generates a masked state for a cube, useful for generating pruning tables and running the IDDFS.
+ *
+ * @param {list} reqs the list of pieces to track
+ * @returns a masked cube, zero values for everything EXCEPT the pieces in reqs
+ */
 const generateMaskedState = (reqs) => {
   const masked = JSON.parse(JSON.stringify(initialState));
   for (
@@ -134,9 +158,8 @@ const generateMaskedState = (reqs) => {
     i < masked.length * masked[0].length * masked[0][0].length;
     i++
   ) {
-    const face = Math.floor(i / 9);
-    const row = Math.floor((i % 9) / 3);
-    const col = i % 3;
+    // set all pieces except those in reqs to 0
+    const { face, row, col } = toStatePosition(i);
     if (reqs.includes(i)) {
       continue;
     }
@@ -145,6 +168,13 @@ const generateMaskedState = (reqs) => {
   return masked;
 };
 
+/**
+ * 
+ * @param {list} states the list of states to hamdle
+ * @param {Number} depth the depth of the table to create
+ * @param {List} moves the list of moves to apply to the states
+ * @returns 
+ */
 const generatePruningTable = (states, depth, moves) => {
   const table = {};
   let prev = states;
@@ -186,7 +216,7 @@ const generateSolution = (mask, moves, current, left, reqs, pruneTable) => {
   if (leastMoves > left) return undefined;
 
   for (const move of moves) {
-    if (current.length && current[current.length - 1][0] == move[0]) continue;
+    if (current.length && current[current.length - 1][0] === move[0]) continue;
     current.push(move);
     makeMove(mask, move);
     const next = generateSolution(
@@ -490,6 +520,29 @@ const printState = (state) => {
     }
     console.log(row);
   }
+};
+
+/**
+ * Converts a global position into face, row, and column.
+ * 
+ * @param {Number} position the position to convert
+ * @returns {Number, Number, Number} the face, row, and column of the position
+ */
+const toStatePosition = (position) => {
+  const face = Math.floor(position / 9);
+  const row = Math.floor((position % 9) / 3);
+  const col = position % 3;
+  return { face, row, col };
+};
+
+/**
+ * Helper method for running the scramble in all necessary states.
+ * We need to track the masked states for when we generate solutions for them.
+ *
+ * @param {String} scramble the scramble to run
+ */
+const scrambleAI = (scramble) => {
+  for (const s of [state, fbMask, sbMask, lseMask]) makeMoves(s, scramble);
 };
 
 const fbPieces = [12, 13, 14, 15, 16, 17, 21, 24, 39, 42, 45, 48, 51];

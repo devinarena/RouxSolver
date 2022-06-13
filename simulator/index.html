@@ -33,8 +33,11 @@
       href="./simulator/favicon/safari-pinned-tab.svg"
       color="#5bbad5"
     />
+    <link href="https://css.gg/user.css" rel="stylesheet" />
+    <link href="https://css.gg/code-slash.css" rel="stylesheet" />
     <meta name="msapplication-TileColor" content="#da532c" />
     <meta name="theme-color" content="#ffffff" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script defer src="main.js"></script></head>
 
   <body>
@@ -55,9 +58,34 @@
             <button type="button" id="scramblebutton">Scramble</button>
             <button type="button" id="solve">Solve</button>
           </div>
+          <textarea id="solution-msg" rows="8" readonly>Solution</textarea>
+          <div>
+            <label for="speed">Speed: </label>
+            <select id="speed">
+              <option value="0.25">0.25x</option>
+              <option value="0.5">0.5x</option>
+              <option value="1">1x</option>
+              <option value="2" selected>2x</option>
+              <option value="4">4x</option>
+              <option value="8">8x</option>
+            </select>
+          </div>
         </form>
-        <textarea id="solution-msg" rows="8" readonly>Solution</textarea>
       </div>
     </div>
   </body>
+
+  <footer>
+    <div>
+      <p>Created by Devin Arena.</p>
+    </div>
+    <div class="right">
+      <a href="https://devinarena.com">
+        <i class="gg-user"></i>
+      </a>
+      <a href="https://github.com/devinarena/RouxSolver">
+        <i class="gg-code-slash"></i>
+      </a>
+    </div>
+  </footer>
 </html>
