@@ -4,9 +4,12 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const isProduction = process.env.NODE_ENV == "production";
 
 const config = {
-  entry: "./src/simulator/index.js",
+  entry: {
+    index: "./src/simulator/index.js"
+  },
   output: {
     path: path.resolve(__dirname, "simulator"),
+    filename: "[name].bundle.js"
   },
   plugins: [
     new HtmlWebpackPlugin({
