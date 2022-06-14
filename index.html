@@ -41,7 +41,9 @@
   </head>
 
   <body>
-    <div class="three-container"></div>
+    <div class="three-container">
+      <h1 id="history-counter"></h1>
+    </div>
     <div class="side-container">
       <div class="side-dialog">
         <h1>RouxSolver</h1>
@@ -51,7 +53,11 @@
           open source and you can find its source code
           <a href="https://github.com/devinarena/RouxSolver">here</a>.
         </p>
-        <p>Enter a scramble or press random to generate a random scramble. You can also type moves out manually.</p>
+        <p>
+          Enter a scramble or press random to generate a random scramble. You
+          can also type moves out manually.
+          <button class="mimic" id="controls">Click to view controls.</button>
+        </p>
         <form>
           <input type="text" id="scramble" placeholder="Scramble" />
           <div>

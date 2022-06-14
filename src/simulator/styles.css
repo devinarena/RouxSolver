@@ -7,6 +7,10 @@
   --button-hover: #666;
 }
 
+.hide {
+  display: none;
+}
+
 html {
   width: 100%;
   height: 100%;
@@ -73,16 +77,21 @@ canvas {
   font-size: 1.25vw;
 }
 
-.side-dialog a {
+.side-dialog a, .mimic {
   text-decoration: none;
   color: #8c92ac;
+  background: none;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  font-size: 1.25vw;
   padding: 0 4px;
   transition: background 1s ease, color 1s ease;
   -moz-transition: background 1s ease, color 1s ease;
   -webkit-transition: background 1s ease, color 1s ease;
 }
 
-.side-dialog a:hover {
+.side-dialog a:hover, .mimic:hover {
   color: #aebbf3;
   background: rgba(0.8, 0.8, 0.8, 0.5);
 }
@@ -219,6 +228,14 @@ footer div a i {
   --ggs: 1.75;
 }
 
+#history-counter {
+  position: absolute;
+  top: 1%;
+  left: 1%;
+  font-size: 1.5vw;
+  color: #fff;
+}
+
 @media screen and (max-width: 768px) {
   body {
     flex-direction: column;
@@ -246,11 +263,11 @@ footer div a i {
     font-size: 5vw;
   }
 
-  #solution-msg, .side-dialog p, form div button, form label {
+  #solution-msg, .side-dialog p, form div button, form label, .side-dialog a, .mimic  {
     font-size: 3.5vw;
   }
 
-  #speed, #scramble {
+  #speed, #scramble, #history-counter {
     font-size: 4.25vw;
   }
 

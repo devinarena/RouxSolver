@@ -27,12 +27,14 @@ let scramble;
 let cube;
 
 // form stuff
-const scrambleInput = document.getElementById("scramble");
-const scrambleButton = document.getElementById("scramblebutton");
-const solveButton = document.getElementById("solve");
-const speedSelector = document.getElementById("speed");
+const scrambleInput = document.querySelector("#scramble");
+const scrambleButton = document.querySelector("#scramblebutton");
+const solveButton = document.querySelector("#solve");
+const controlsButton = document.querySelector("#controls");
+const speedSelector = document.querySelector("#speed");
 
-let solutionMsg = document.getElementById("solution-msg");
+const historyCounter = document.querySelector("#history-counter");
+const solutionMsg = document.querySelector("#solution-msg");
 
 // Use a pivot so we can rotate the entire cube
 const pivot = new THREE.Group();
@@ -96,7 +98,7 @@ const scrambleCube = () => {
   // get the scramble from the input
   scramble = scrambleInput.value.trim();
   scrambleAI(scramble);
-  cube.queueMoves(scramble);
+  queueMoves(scramble);
   solutionMsg.innerHTML = "Scrambling with " + scramble;
 
   running = false;
@@ -109,6 +111,10 @@ const scrambleCube = () => {
  */
 const solve = () => {
   if (running) return;
+  if (cube.inProgress()) {
+    solutionMsg.innerHTML = "Cannot solve while cube is still scrambling";
+    return;
+  }
 
   solutionMsg.innerHTML = "Generating solution...";
 
@@ -120,15 +126,15 @@ const solve = () => {
     let start = new Date();
 
     const { FB, SB, CMLL, LSE } = startAI(cube);
-    cube.queueMoves(FB);
-    cube.queueMoves(SB);
-    cube.queueMoves(CMLL);
-    cube.queueMoves(LSE);
+    queueMoves(FB);
+    queueMoves(SB);
+    queueMoves(CMLL);
+    queueMoves(LSE);
 
     let elapsed = new Date() - start;
-  
+
     solutionMsg.innerHTML = `${FB} // FB\n${SB} // SB\n${CMLL} // CMLL\n${LSE} // LSE\n\nTime to solution: ${elapsed}ms \n\n\n// ALPHA NOTICE: And the cube is solved... hopefully. If not, this is a bug (I most likely entered an algorithm wrong). If you have the scramble, please post it with this as an issue on GitHub.`;
-  
+
     running = false;
     scrambleButton.disabled = false;
     solveButton.disabled = false;
@@ -175,16 +181,16 @@ const updateCanvasSize = (force) => {
 /**
  * Reset the camera when 'r' is pressed.
  */
-document.addEventListener("keypress", (evt) => {
+document.addEventListener("keydown", (evt) => {
   // ignore when typing into scramble field
   if (evt.target.tagName === "INPUT") return;
 
-  if (evt.key === "Esc") {
+  if (evt.keyCode === 27) {
     controls.reset();
     camera.position.set(0, 0, 7);
   }
   // Rotate the cube if a move key is pressed
-  if (
+  else if (
     evt.key === "l" ||
     evt.key === "r" ||
     evt.key === "u" ||
@@ -196,11 +202,11 @@ document.addEventListener("keypress", (evt) => {
     // evt.key === "y" ||
     // evt.key === "z"
   ) {
-    cube.rotate(pivot, evt.key.toUpperCase());
+    queueMoves(evt.key.toUpperCase());
     scrambleAI(evt.key.toUpperCase());
   }
   // Capital letters are used for prime moves (in the opposite direction)
-  if (
+  else if (
     evt.key === "L" ||
     evt.key === "R" ||
     evt.key === "U" ||
@@ -212,15 +218,34 @@ document.addEventListener("keypress", (evt) => {
     // evt.key === "Y" ||
     // evt.key === "Z"
   ) {
-    cube.rotate(pivot, evt.key + "'");
+    queueMoves(evt.key + "'");
     scrambleAI(evt.key + "'");
-  }
-
-  if (evt.key === "P") {
+  } else if (evt.key === "P") {
     cube.printState();
     debug();
+  } else if (evt.keyCode === 37) {
+    cube.previousMoveInHistory(pivot);
+    if (cube.history.length > 0)
+      historyCounter.innerHTML =
+        cube.history.length - cube.historyIndex - 1 + " moves back in history";
+  } else if (evt.keyCode === 39) {
+    cube.nextMoveInHistory(pivot);
+    if (
+      cube.history.length > 0 &&
+      cube.historyIndex != cube.history.length - 1
+    ) {
+      historyCounter.innerHTML =
+        cube.history.length - cube.historyIndex - 1 + " moves back in history";
+    } else {
+      historyCounter.innerHTML = "";
+    }
   }
 });
+
+const queueMoves = (moves) => {
+  cube.queueMoves(moves);
+  historyCounter.innerHTML = "";
+};
 
 // Input listeners for buttons
 document
@@ -232,6 +257,30 @@ speedSelector.addEventListener(
   "change",
   () => (cube.rotationSpeed = parseFloat(speedSelector.value))
 );
+controlsButton.addEventListener("click", () => {
+  solutionMsg.innerHTML = "";
+  solutionMsg.innerHTML += "Controls:\n\n";
+  solutionMsg.innerHTML += "Basic:\n";
+  solutionMsg.innerHTML += "R: Rotates the right face cw\n";
+  solutionMsg.innerHTML += "Shift+R: Rotates the right face ccw\n";
+  solutionMsg.innerHTML += "L: Rotates the left face cw\n";
+  solutionMsg.innerHTML += "Shift+L: Rotates the left face ccw\n";
+  solutionMsg.innerHTML += "U: Rotates the up face cw\n";
+  solutionMsg.innerHTML += "Shift+U: Rotates the up face ccw\n";
+  solutionMsg.innerHTML += "D: Rotates the down face cw\n";
+  solutionMsg.innerHTML += "Shift+D: Rotates the down face ccw\n";
+  solutionMsg.innerHTML += "F: Rotates the front face cw\n";
+  solutionMsg.innerHTML += "Shift+F: Rotates the front face ccw\n";
+  solutionMsg.innerHTML += "B: Rotates the back face cw\n";
+  solutionMsg.innerHTML += "Shift+B: Rotates the back face ccw\n";
+  solutionMsg.innerHTML += "M: Rotates the middle face cw\n";
+  solutionMsg.innerHTML +=
+    "Shift+M: Rotates the middle face ccw\n\n";
+  solutionMsg.innerHTML += "Other:\n";
+  solutionMsg.innerHTML += "Esc: Resets the camera\n";
+  solutionMsg.innerHTML += "P: Prints the state of the cube (debug)\n";
+  solutionMsg.innerHTML += "Arrow keys: Moves through move history\n";
+});
 
 /**
  * When the window first loads, begin animating the scene.

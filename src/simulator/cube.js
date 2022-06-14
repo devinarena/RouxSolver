@@ -4,8 +4,11 @@ import { Group, Mesh } from "three";
 function Cube() {
   this.cube = [];
   this.moves = [];
+  this.history = [];
+  this.historyIndex = 0;
   this.rotationDirection = "";
   this.rotationInverted = 1;
+  this.rotationDoubled = false;
   this.rotatedAmount = 0;
   this.rotateGroup = new Group();
   this.rotationSpeed = 2;
@@ -47,7 +50,7 @@ function Cube() {
         );
       this.rotatedAmount += Math.PI * this.rotationSpeed * delta;
       // if we've hit the proper rotation (90 degrees)
-      if (this.rotatedAmount >= Math.PI / 2) {
+      if (this.rotatedAmount >= (Math.PI / 2) * (this.rotationDoubled + 1)) {
         // clamp rotation values to nearest 90 degree
         let x =
           Math.round(this.rotateGroup.rotation.x / (Math.PI / 2)) *
@@ -80,10 +83,7 @@ function Cube() {
       // if we have moves in the moves queue
       if (this.moves.length > 0) {
         // rotate from the queue first move in the queue
-        this.rotate(
-          pivot,
-          this.moves[0],
-        );
+        this.rotate(pivot, this.moves[0]);
         // remove the first move from the queue
         this.moves.splice(0, 1);
       }
@@ -120,14 +120,15 @@ function Cube() {
   this.queueMoves = (moves) => {
     if (!moves.includes(" ")) moves += " ";
     // Move strings are split by spaces, each move is a space
+    // truncate history after the current history index
+    this.history = this.history.slice(0, this.historyIndex + 1);
     moves.split(" ").forEach((move) => {
       if (move.length === 0) return; // skip empty strings
-      if (move.includes("2")) {
-        move = move.replace("2", "");
-        this.moves.push(move);
-      }
+      // add to history
+      this.history.push(move);
       this.moves.push(move);
     });
+    this.historyIndex = this.history.length - 1;
   };
 
   /**
@@ -138,16 +139,57 @@ function Cube() {
   this.queueMovesReversed = (moves) => {
     let out = "";
     // for each move in the move string
+    // truncate history after the current history index
+    this.history = this.history.slice(0, this.historyIndex + 1);
     moves.split(" ").forEach((move) => {
       if (move.length === 0) return; // skip empty strings
-      // flip the moves (add or remove a rpime)
-      if (move.endsWith("'")) move = move.substring(move, move.length - 1);
-      else move += "'";
+      // flip the moves (add or remove a prime)
+      move = flipMove(move);
+      // add the move to history
+      this.history.push(move);
       // create a reversed output string
       out = move + " " + out;
     });
     // add the moves to the move queue
     this.queueMoves(out.trim());
+    this.historyIndex = this.history.length - 1;
+  };
+
+  /**
+   * Flips a move (add or remove prime)
+   *
+   * @param {String} move the move to flip
+   * @returns {String} the flipped move, either added or removed prime
+   */
+  this.flipMove = (move) => {
+    if (move.endsWith("'")) move = move.substring(move, move.length - 1);
+    else move += "'";
+    return move;
+  };
+
+  /**
+   * Moves to the next-most recent move in history and executes it.
+   *
+   * @returns {String} the next (MORE RECENT) move in the history.
+   */
+  this.nextMoveInHistory = (pivot) => {
+    if (this.inProgress()) return;
+    if (this.historyIndex >= this.history.length - 1) return;
+    this.historyIndex++;
+    console.log(this.history[this.historyIndex]);
+    this.rotate(pivot, this.history[this.historyIndex]);
+  };
+
+  /**
+   * Moves to the previous-most recent move in history and executes it.
+   *
+   * @returns {String} the previous (LESS RECENT) move in the history.
+   */
+  this.previousMoveInHistory = (pivot) => {
+    if (this.inProgress()) return;
+    if (this.historyIndex < 0 || this.history.length === 0) return;
+    this.rotate(pivot, this.flipMove(this.history[this.historyIndex]));
+    this.historyIndex--;
   };
 
   /**
@@ -156,23 +198,23 @@ function Cube() {
    * @returns {boolean} true if the move queue contains moves, false otherwise.
    */
   this.inProgress = () => {
-    return this.moves.length > 0;
+    return this.moves.length > 0 || this.rotateGroup.children.length > 0;
   };
 
   /**
    * Rotates a face of the cube like a real speed cube.
    *
    * @param {Object3D} pivot the global pivot to use
-   * @param {String} direction a directional code (R, L, U, D, B, F)
-   * @param {boolean} inverted if the move is a prime move
+   * @param {String} move a directional code (R, L, U, D, B, F)
    * @returns true if the rotation was successful, false otherwise
    */
-  this.rotate = (pivot, direction) => {
+  this.rotate = (pivot, move) => {
     // if we're currently rotating stop
     if (this.rotateGroup.children.length != 0) return false;
-    this.rotationDirection = direction;
-    const inverted = direction.endsWith("'");
+    this.rotationDirection = move;
+    const inverted = move.endsWith("'");
     this.rotationInverted = inverted ? -1 : 1;
+    this.rotationDoubled = move.includes("2");
     this.rotatedAmount = 0;
     // this just adds the proper cubies to the rotation group depending on the move
     if (this.rotationDirection[0] === "L") {
@@ -191,7 +233,7 @@ function Cube() {
           pivot.remove(cubie.getCube());
         }
       });
-    } else if(this.rotationDirection[0] === "r") {
+    } else if (this.rotationDirection[0] === "r") {
       this.cube.forEach((cubie) => {
         if (cubie.getCube().position.x >= -0.01) {
           cubie.rotate("x", inverted);
@@ -266,7 +308,7 @@ function Cube() {
 
   /**
    * Kinda legacy, was mainly used for the original project idea.
-   * 
+   *
    * Used in the console to print the current state of a cube,
    * makes it easy for me to generate scrambled state JSON.
    */
