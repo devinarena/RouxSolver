@@ -224,12 +224,16 @@ document.addEventListener("keydown", (evt) => {
     cube.printState();
     debug();
   } else if (evt.keyCode === 37) {
-    cube.previousMoveInHistory(pivot);
+    const move = cube.previousMoveInHistory(pivot);
+    // make sure ai knows we moved in history
+    scrambleAI(move);
     if (cube.history.length > 0)
       historyCounter.innerHTML =
         cube.history.length - cube.historyIndex - 1 + " moves back in history";
   } else if (evt.keyCode === 39) {
-    cube.nextMoveInHistory(pivot);
+    const move = cube.nextMoveInHistory(pivot);
+    // make sure ai knows we moved in history
+    scrambleAI(move);
     if (
       cube.history.length > 0 &&
       cube.historyIndex != cube.history.length - 1

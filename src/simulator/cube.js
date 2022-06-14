@@ -176,8 +176,9 @@ function Cube() {
     if (this.inProgress()) return;
     if (this.historyIndex >= this.history.length - 1) return;
     this.historyIndex++;
-    console.log(this.history[this.historyIndex]);
-    this.rotate(pivot, this.history[this.historyIndex]);
+    const move = this.history[this.historyIndex];
+    this.rotate(pivot, move);
+    return move;
   };
 
   /**
@@ -188,8 +189,10 @@ function Cube() {
   this.previousMoveInHistory = (pivot) => {
     if (this.inProgress()) return;
     if (this.historyIndex < 0 || this.history.length === 0) return;
-    this.rotate(pivot, this.flipMove(this.history[this.historyIndex]));
+    const move = this.flipMove(this.history[this.historyIndex]);
+    this.rotate(pivot, move);
     this.historyIndex--;
+    return move;
   };
 
   /**
