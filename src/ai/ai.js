@@ -522,6 +522,10 @@ const printState = (state) => {
   }
 };
 
+const debug = () => {
+  printState(state);
+}
+
 /**
  * Converts a global position into face, row, and column.
  * 
@@ -564,4 +568,4 @@ const lsePruningTable = generatePruningTable(
   LSEM
 );
 
-export { startAI, scrambleAI };
+export { startAI, scrambleAI, debug };

@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import Cube from "./cube";
 import * as state from "./state";
-import { startAI, scrambleAI } from "../ai/ai";
+import { startAI, scrambleAI, debug } from "../ai/ai";
 import { randomScramble, checkScramble } from "../ai/algorithms";
 import "./styles.css";
 
@@ -40,6 +40,10 @@ const pivot = new THREE.Group();
 // initialize renderer and camera controller
 const renderer = new THREE.WebGLRenderer();
 const controls = new OrbitControls(camera, renderer.domElement);
+
+// setup bounds for distance from camera to cube
+controls.minDistance = 3;
+controls.maxDistance = 50;
 
 const threeContainer =
   document.body.getElementsByClassName("three-container")[0];
@@ -106,23 +110,29 @@ const scrambleCube = () => {
 const solve = () => {
   if (running) return;
 
+  solutionMsg.innerHTML = "Generating solution...";
+
   running = true;
   scrambleButton.disabled = true;
   solveButton.disabled = true;
 
-  solutionMsg.innerHTML = "Generating solution...";
+  setTimeout(() => {
+    let start = new Date();
 
-  const { FB, SB, CMLL, LSE } = startAI(cube);
-  cube.queueMoves(FB);
-  cube.queueMoves(SB);
-  cube.queueMoves(CMLL);
-  cube.queueMoves(LSE);
+    const { FB, SB, CMLL, LSE } = startAI(cube);
+    cube.queueMoves(FB);
+    cube.queueMoves(SB);
+    cube.queueMoves(CMLL);
+    cube.queueMoves(LSE);
 
-  solutionMsg.innerHTML = `${FB} // FB\n${SB} // SB\n${CMLL} // CMLL\n${LSE} // LSE`;
-
-  running = false;
-  scrambleButton.disabled = false;
-  solveButton.disabled = false;
+    let elapsed = new Date() - start;
+  
+    solutionMsg.innerHTML = `${FB} // FB\n${SB} // SB\n${CMLL} // CMLL\n${LSE} // LSE\n\nTime to solution: ${elapsed}ms \n\n\n// ALPHA NOTICE: And the cube is solved... hopefully. If not, this is a bug (I most likely entered an algorithm wrong). If you have the scramble, please post it with this as an issue on GitHub.`;
+  
+    running = false;
+    scrambleButton.disabled = false;
+    solveButton.disabled = false;
+  }, 50);
 };
 
 /**
@@ -208,6 +218,7 @@ document.addEventListener("keypress", (evt) => {
 
   if (evt.key === "P") {
     cube.printState();
+    debug();
   }
 });
 
